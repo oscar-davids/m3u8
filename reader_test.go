@@ -16,7 +16,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
-
+	"time"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -566,7 +566,7 @@ func TestDecodeMediaPlaylistWithProgramDateTime(t *testing.T) {
 		t.Errorf("TargetDuration of parsed playlist = %f (must = 15.0)", pp.TargetDuration)
 	}
 
-	if !pp.Closed {
+	if pp.Live {
 		t.Error("VOD sample media playlist, closed should be true.")
 	}
 
