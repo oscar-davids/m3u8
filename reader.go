@@ -419,6 +419,12 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 				return err
 			}
 		}
+		if state.tagDateRange {
+			state.tagDateRange = false
+			if err = p.SetDateRange(state.dateRange); strict && err != nil {
+				return err
+			}
+		}
 		// If EXT-X-KEY appeared before reference to segment (EXTINF) then it linked to this segment
 		if state.tagKey {
 			p.Segments[p.last()].Key = &Key{state.xkey.Method, state.xkey.URI, state.xkey.IV, state.xkey.Keyformat, state.xkey.Keyformatversions}
@@ -516,6 +522,42 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		state.listType = MEDIA
 		if state.programDateTime, err = TimeParse(line[25:]); strict && err != nil {
 			return err
+		}
+	case !state.tagDateRange && strings.HasPrefix(line, "#EXT-X-DATERANGE"):
+		state.tagDateRange = true
+		state.dateRange = new(DateRange)
+		for attribute, value := range decodeParamsLine(line[17:]) {
+			switch attribute {
+			case "ID":
+				state.dateRange.ID = value
+			case "START-DATE":
+				if state.dateRange.StartDate, err = TimeParse(value); strict && err != nil {
+					return err
+				}
+			case "END-DATE":
+				if state.dateRange.EndDate, err = TimeParse(value); strict && err != nil {
+					return err
+				}
+			case "SCTE35-CMD":
+				state.dateRange.SCTE35Command = value
+			case "SCTE35-OUT":
+				state.dateRange.SCTE35Out = value
+			case "SCTE35-IN":
+				state.dateRange.SCTE35In = value
+			case "DURATION":
+				state.dateRange.Duration, _ = strconv.ParseFloat(value, 64)
+			case "PLANNED-DURATION":
+				state.dateRange.PlannedDuration, _ = strconv.ParseFloat(value, 64)
+			case "END-ON-NEXT":
+				state.dateRange.EndOnNext = value
+			default:
+				if strings.HasPrefix(attribute, "X-") {
+					if state.dateRange.ClientAttributes == nil {
+						state.dateRange.ClientAttributes = make(ClientAttributes, 1)
+					}
+					state.dateRange.ClientAttributes[attribute] = value
+				}
+			}
 		}
 	case !state.tagRange && strings.HasPrefix(line, "#EXT-X-BYTERANGE:"):
 		state.tagRange = true

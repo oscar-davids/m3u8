@@ -34,6 +34,8 @@ const (
 	*/
 	minver   = uint8(3)
 	DATETIME = time.RFC3339Nano // Format for EXT-X-PROGRAM-DATE-TIME defined in section 3.4.5
+	//START-DATE for EXT-X-DATERANGE in defined in section 4.3.2.7(ISO-8601) 
+	DATERANGE_DATETIME = "2020-05-13T14:00:00+08:00"
 )
 
 type ListType uint
@@ -205,6 +207,24 @@ type MediaSegment struct {
 	Discontinuity   bool      // EXT-X-DISCONTINUITY indicates an encoding discontinuity between the media segment that follows it and the one that preceded it (i.e. file format, number and type of tracks, encoding parameters, encoding sequence, timestamp sequence)
 	SCTE            *SCTE     // SCTE-35 used for Ad signaling in HLS
 	ProgramDateTime time.Time // EXT-X-PROGRAM-DATE-TIME tag associates the first sample of a media segment with an absolute date and/or time
+	DateRange       *DateRange // EXT-X-DATERANGE tag associates a Date Range (i.e., a range of  ime defined by a starting and ending date) with a set of attribute/value pairs.
+}
+// This type store client-defined attributes for date range
+type ClientAttributes map[string]string
+
+// This structure store date range attributes
+type DateRange struct {
+	ID               string // required
+	Class            string
+	StartDate        time.Time // required
+	EndDate          time.Time
+	Duration         float64
+	PlannedDuration  float64
+	SCTE35Command    string
+	SCTE35In         string
+	SCTE35Out        string
+	EndOnNext        string
+	ClientAttributes ClientAttributes
 }
 
 // SCTE holds custom, non EXT-X-DATERANGE, SCTE-35 tags
@@ -281,6 +301,7 @@ type decodingState struct {
 	tagRange           bool
 	tagDiscontinuity   bool
 	tagProgramDateTime bool
+	tagDateRange       bool
 	tagKey             bool
 	tagMap             bool
 	programDateTime    time.Time
@@ -293,4 +314,5 @@ type decodingState struct {
 	xkey               *Key
 	xmap               *Map
 	scte               *SCTE
+	dateRange          *DateRange
 }
